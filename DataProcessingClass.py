@@ -30,28 +30,28 @@ class MPG:
 
         return result_data
 
-    def train_linear_regression(self, train_data, test_data):
-
+    def train_linear_regression(self, train_data, test_data, model=None):
         Y_Train = np.array(train_data[self.mpg_col])
         X_Train = np.array(train_data.drop(columns=[self.mpg_col]))
 
         Y_Test = np.array(test_data[self.mpg_col])
         X_Test = np.array(test_data.drop(columns=[self.mpg_col]))
-        #print(type(Y_Train))
-        reg = LinearRegression().fit(X_Train, Y_Train)
-        Y_predict = reg.predict(X_Test)
 
+        if model is None:
+            # Create a new model if none is provided
+            model = LinearRegression()
+            print("Created new model")
+
+        # Train or update the model
+        model.fit(X_Train, Y_Train)
+        Y_predict = model.predict(X_Test)
 
         mse = mean_squared_error(Y_Test, Y_predict)
-        train_data_df = train_data.drop(columns=[self.mpg_col])
-        #print(train_data[self.mpg_col])
 
-        Titles = train_data_df.columns.tolist()
-        Coefficient = pd.DataFrame(reg.coef_).T
-        Coefficient.columns = Titles
-        print(Coefficient)
-        return mse
+        decade_key = f"{train_data['year'].min()}-{test_data['year'].max()}"
+        self.trained_models[decade_key] = model
 
+        return model, mse
 
 
 # Example usage:
@@ -59,15 +59,15 @@ mpg = MPG()
 
 
 mse = []
-
-years = np.arange(1985,2015,1)
+model = None
+start_year = 2000
+years = np.arange(start_year, 2024, 1)
 
 for d in years:
-    mse.append(mpg.train_linear_regression(mpg.get_year_range(d),mpg.get_year_range(d+10)))
+    model, tmp_mse = mpg.train_linear_regression(mpg.get_year_range(start_year,d+1), mpg.get_year_range(d+1,d+2))#,model)
+    mse.append(tmp_mse)
 
-
-#for i in range(len(years)):
-#    print(f"MSE trained on {years[i]}: {mse[i]}")
+#print(mse)
 
 # Plotting
 plt.plot(years, mse, marker='o')
@@ -80,12 +80,3 @@ plt.show()
 # Print MSE values
 for i in range(len(years)):
     print(f"MSE trained on {years[i]}: {mse[i]}")
-#print(eighties.head)
-# Display the modified DataFrame
-#print(seventies)
-
-
-
-
-
-
